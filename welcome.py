@@ -13,33 +13,37 @@
 # limitations under the License.
 
 import os
-from flask import Flask, jsonify
+
+import requests
+from flask import Flask
 
 app = Flask(__name__)
 
+HEADERS = {"Authorization": "Bearer %s" % os.getenv('WRIKE_ACCESS_TOKEN')}
+
 @app.route('/')
-def Welcome():
-    return app.send_static_file('index.html')
+def welcome():
+    """display ibmcode challenge status"""
 
-@app.route('/myapp')
-def WelcomeToMyapp():
-    return 'Welcome again to my app running on Bluemix!'
+    # Found project IDs by querying https://www.wrike.com/api/v3/folders -- but
+    # saved them as environment variables instead of performing the same query
+    # a bunch of times
+    journey_url = 'https://www.wrike.com/api/v3/folders/%s/tasks' % os.getenv("JOURNEY_ID")
+    completed_journeys = 0
+    previously_completed_journeys = 58  # Number when challenge started
 
-@app.route('/api/people')
-def GetPeople():
-    list = [
-        {'name': 'John', 'age': 28},
-        {'name': 'Bill', 'val': 26}
-    ]
-    return jsonify(results=list)
+    r = requests.get(journey_url, headers=HEADERS)
+    data = r.json()['data']
+    for entry in data:
+        if r.json()['data'][0]['status'] == 'Complete':
+            completed_journeys += 1
 
-@app.route('/api/people/<name>')
-def SayHello(name):
-    message = {
-        'message': 'Hello ' + name
-    }
-    return jsonify(results=message)
+    completed_challenge_journeys = completed_journeys - previously_completed_journeys
+
+    # how_to_url = 'https://www.wrike.com/api/v3/folders/%s/tasks' % os.getenv("HOW_TO_ID")
+
+    return app.render_template('index.html', completed_challenge_journeys=completed_challenge_journeys)
 
 port = os.getenv('PORT', '5000')
 if __name__ == "__main__":
-	app.run(host='0.0.0.0', port=int(port))
+    app.run(host='0.0.0.0', port=int(port))
