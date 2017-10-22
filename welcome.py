@@ -16,6 +16,7 @@ import os
 
 import requests
 from flask import Flask
+from flask import render_template
 
 app = Flask(__name__)
 
@@ -32,17 +33,22 @@ def welcome():
     completed_journeys = 0
     previously_completed_journeys = 58  # Number when challenge started
 
-    r = requests.get(journey_url, headers=HEADERS)
-    data = r.json()['data']
+    data = requests.get(journey_url, headers=HEADERS).json()['data']
     for entry in data:
-        if r.json()['data'][0]['status'] == 'Complete':
+        if entry['status'] == 'Completed':
             completed_journeys += 1
 
     completed_challenge_journeys = completed_journeys - previously_completed_journeys
 
-    # how_to_url = 'https://www.wrike.com/api/v3/folders/%s/tasks' % os.getenv("HOW_TO_ID")
+    howto_url = 'https://www.wrike.com/api/v3/folders/%s/tasks' % os.getenv("HOWTO_ID")
+    completed_howtos = 0
+    data = requests.get(howto_url, headers=HEADERS).json()['data']
+    for entry in data:
+        if entry['status'] == 'Completed':
+            completed_howtos += 1
 
-    return app.render_template('index.html', completed_challenge_journeys=completed_challenge_journeys)
+    return render_template('index.html', completed_challenge_journeys=completed_challenge_journeys,
+                                         completed_howtos=completed_howtos)
 
 port = os.getenv('PORT', '5000')
 if __name__ == "__main__":
