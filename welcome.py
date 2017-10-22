@@ -18,9 +18,10 @@ import requests
 from flask import Flask
 from flask import render_template
 
-app = Flask(__name__)
 
+app = Flask(__name__)
 HEADERS = {"Authorization": "Bearer %s" % os.getenv('WRIKE_ACCESS_TOKEN')}
+
 
 @app.route('/')
 def welcome():
@@ -29,26 +30,24 @@ def welcome():
     # Found project IDs by querying https://www.wrike.com/api/v3/folders -- but
     # saved them as environment variables instead of performing the same query
     # a bunch of times
-    journey_url = 'https://www.wrike.com/api/v3/folders/%s/tasks' % os.getenv("JOURNEY_ID")
-    completed_journeys = 0
     previously_completed_journeys = 58  # Number when challenge started
-
-    data = requests.get(journey_url, headers=HEADERS).json()['data']
-    for entry in data:
-        if entry['status'] == 'Completed':
-            completed_journeys += 1
-
+    completed_journeys = _count_completed_items(os.getenv("JOURNEY_ID"))
     completed_challenge_journeys = completed_journeys - previously_completed_journeys
 
-    howto_url = 'https://www.wrike.com/api/v3/folders/%s/tasks' % os.getenv("HOWTO_ID")
-    completed_howtos = 0
-    data = requests.get(howto_url, headers=HEADERS).json()['data']
+    completed_howtos = _count_completed_items(os.getenv("HOWTO_ID"))
+    return render_template('index.html', journeys=completed_challenge_journeys,
+                                         howtos=completed_howtos)
+
+
+def _count_completed_items(folder_id):
+    url = 'https://www.wrike.com/api/v3/folders/%s/tasks' % folder_id
+    completed = 0
+    data = requests.get(url, headers=HEADERS).json()['data']
     for entry in data:
         if entry['status'] == 'Completed':
-            completed_howtos += 1
+            completed += 1
+    return completed
 
-    return render_template('index.html', completed_challenge_journeys=completed_challenge_journeys,
-                                         completed_howtos=completed_howtos)
 
 port = os.getenv('PORT', '5000')
 if __name__ == "__main__":
