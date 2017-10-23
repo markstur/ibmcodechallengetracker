@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import os
 
 import requests
@@ -30,6 +31,17 @@ def welcome():
     # Found project IDs by querying https://www.wrike.com/api/v3/folders -- but
     # saved them as environment variables instead of performing the same query
     # a bunch of times
+
+    if not os.getenv("JOURNEY_ID"):
+        logging.error("missing required environment variable: JOURNEY_ID")
+        exit(1)
+    if not os.getenv("HOWTO_ID"):
+        logging.error("missing required environment variable: HOWTO_ID")
+        exit(1)
+    if not os.getenv("WRIKE_ACCESS_TOKEN"):
+        logging.error("missing required environment variable: WRIKE_ACCESS_TOKEN")
+        exit(1)
+
     previously_completed_journeys = 58  # Number when challenge started
     completed_journeys = _count_completed_items(os.getenv("JOURNEY_ID"))
     completed_challenge_journeys = completed_journeys - previously_completed_journeys
